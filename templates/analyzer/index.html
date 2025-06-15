@@ -43,6 +43,8 @@
                             <option value="apache">Apache Access Log</option>
                             <option value="nginx">Nginx Access Log</option>
                             <option value="json">JSON Log</option>
+                            <option value="firewall">Firewall Log (UFW)</option>
+                            <option value="security">Security Event Log</option>
                             <option value="generic">Generic/Custom Log</option>
                         </select>
                         <div class="form-text">
@@ -82,8 +84,10 @@
                 <ul class="text-muted mb-3">
                     <li>Apache & Nginx access logs</li>
                     <li>JSON structured logs</li>
+                    <li>Firewall logs (UFW/iptables)</li>
+                    <li>Security event logs</li>
+                    <li>Network traffic logs</li>
                     <li>Custom log formats</li>
-                    <li>Firewall logs</li>
                 </ul>
 
                 <h6 class="text-success">Analytics:</h6>
@@ -108,8 +112,11 @@
                 <small class="text-muted">Apache Access Log:</small>
                 <pre class="text-info small mt-2"><code>192.168.1.100 - - [01/Jan/2025:12:00:00 +0000] "GET /admin HTTP/1.1" 401 1234 "-" "Mozilla/5.0..."</code></pre>
                 
-                <small class="text-muted">JSON Log:</small>
-                <pre class="text-info small mt-2"><code>{"ip": "192.168.1.100", "timestamp": "2025-01-01T12:00:00Z", "request": "GET /admin", "status": 401}</code></pre>
+                <small class="text-muted">Firewall Log:</small>
+                <pre class="text-info small mt-2"><code>Jun 15 08:00:01 firewall kernel: [UFW BLOCK] SRC=203.0.113.45 DST=10.0.0.100 DPT=22 PROTO=TCP</code></pre>
+                
+                <small class="text-muted">Security Event Log:</small>
+                <pre class="text-info small mt-2"><code>2025-06-15T08:00:01.000Z IDS_ALERT: SQL injection attempt from 203.0.113.45</code></pre>
             </div>
         </div>
     </div>

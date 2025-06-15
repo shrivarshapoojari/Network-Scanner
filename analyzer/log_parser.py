@@ -46,6 +46,8 @@ class LogAnalyzer:
         apache_pattern = r'\d+\.\d+\.\d+\.\d+ - - \['
         nginx_pattern = r'\d+\.\d+\.\d+\.\d+ - \w+ \['
         json_pattern = r'^\s*\{'
+        firewall_pattern = r'.+kernel:.+\[UFW\s+(BLOCK|ALLOW)\]'
+        security_pattern = r'\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\s+(IDS_ALERT|FIREWALL_|AUTH_FAIL|DDoS_ALERT)'
         
         for line in sample_lines:
             if re.match(apache_pattern, line):
@@ -54,6 +56,10 @@ class LogAnalyzer:
                 return 'nginx'
             elif re.match(json_pattern, line):
                 return 'json'
+            elif re.search(firewall_pattern, line):
+                return 'firewall'
+            elif re.search(security_pattern, line):
+                return 'security'
         
         return 'generic'
     
@@ -99,6 +105,49 @@ class LogAnalyzer:
         except json.JSONDecodeError:
             return None
     
+    def parse_firewall_log(self, line):
+        """Parse firewall log format (UFW)"""
+        pattern = r'.+\[UFW\s+(BLOCK|ALLOW)\].+SRC=(\d+\.\d+\.\d+\.\d+)\s+DST=(\d+\.\d+\.\d+\.\d+).+DPT=(\d+)'
+        match = re.search(pattern, line)
+        
+        if match:
+            action = match.group(1)
+            src_ip = match.group(2)
+            dst_ip = match.group(3)
+            port = match.group(4)
+            
+            return {
+                'ip': src_ip,
+                'action': action,
+                'destination_ip': dst_ip,
+                'destination_port': int(port),
+                'raw_line': line,
+                'timestamp': None,
+                'log_type': 'firewall'
+            }
+        return None
+    
+    def parse_security_log(self, line):
+        """Parse security event log format"""
+        pattern = r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)\s+(\w+):\s+(.+?)(?:from\s+(\d+\.\d+\.\d+\.\d+))?'
+        match = re.search(pattern, line)
+        
+        if match:
+            timestamp = match.group(1)
+            event_type = match.group(2)
+            description = match.group(3)
+            ip = match.group(4) if match.group(4) else None
+            
+            return {
+                'ip': ip,
+                'timestamp': timestamp,
+                'event_type': event_type,
+                'description': description,
+                'raw_line': line,
+                'log_type': 'security'
+            }
+        return None
+    
     def parse_generic_log(self, line):
         """Parse generic log format - extract IP and basic info"""
         ip_pattern = r'(\d+\.\d+\.\d+\.\d+)'
@@ -138,8 +187,8 @@ class LogAnalyzer:
         """Detect various attack patterns in log entry"""
         attacks = []
         
-        # Get request string
-        request = entry.get('request', '') or entry.get('raw_line', '')
+        # Get request string or raw line
+        request = entry.get('request', '') or entry.get('raw_line', '') or entry.get('description', '')
         request_lower = request.lower()
         
         # Check for different attack types
@@ -148,6 +197,22 @@ class LogAnalyzer:
                 if re.search(pattern, request_lower, re.IGNORECASE):
                     attacks.append(attack_type)
                     break
+        
+        # Check for security event types
+        event_type = entry.get('event_type', '')
+        if event_type:
+            if 'IDS_ALERT' in event_type:
+                attacks.append('intrusion_detection')
+            elif 'AUTH_FAIL' in event_type:
+                attacks.append('authentication_failure')
+            elif 'DDoS_ALERT' in event_type:
+                attacks.append('ddos_attack')
+            elif 'MALWARE_DETECTED' in event_type:
+                attacks.append('malware')
+        
+        # Check firewall actions
+        if entry.get('action') == 'BLOCK':
+            attacks.append('blocked_connection')
         
         return attacks
     
@@ -158,13 +223,28 @@ class LogAnalyzer:
         
         for entry in entries:
             status_code = entry.get('status_code', 200)
-            request = entry.get('request', '') or entry.get('raw_line', '')
+            request = entry.get('request', '') or entry.get('raw_line', '') or entry.get('description', '')
+            event_type = entry.get('event_type', '')
             
             # Check for failed login patterns
+            is_failed_login = False
+            
+            # HTTP-based failed logins
             if (status_code in [401, 403] or 
                 'login' in request.lower() or 
                 'admin' in request.lower() or
                 'wp-admin' in request.lower()):
+                is_failed_login = True
+            
+            # Security event-based failed logins
+            elif 'AUTH_FAIL' in event_type or 'Failed' in request:
+                is_failed_login = True
+            
+            # Firewall blocked authentication attempts
+            elif entry.get('action') == 'BLOCK' and entry.get('destination_port') in [22, 23, 21, 3389]:
+                is_failed_login = True
+            
+            if is_failed_login:
                 failed_logins += 1
                 ip = entry.get('ip')
                 if ip:
@@ -175,23 +255,37 @@ class LogAnalyzer:
     def detect_port_scans(self, entries):
         """Detect port scanning attempts"""
         ip_requests = defaultdict(set)
+        ip_ports = defaultdict(set)
         
         for entry in entries:
             ip = entry.get('ip')
-            request = entry.get('request', '') or entry.get('raw_line', '')
+            request = entry.get('request', '') or entry.get('raw_line', '') or entry.get('description', '')
             
-            if ip and request:
-                # Extract path from request
+            # For firewall logs, track destination ports
+            if entry.get('log_type') == 'firewall' and entry.get('destination_port'):
+                ip_ports[ip].add(entry.get('destination_port'))
+            
+            # For web logs, track different paths
+            elif ip and request:
                 try:
+                    if 'scan' in request.lower() or 'port' in request.lower():
+                        ip_requests[ip].add('port_scan_indicator')
                     path = request.split()[1] if len(request.split()) > 1 else '/'
                     ip_requests[ip].add(path)
                 except:
                     continue
         
-        # Consider it a port scan if an IP requests many different paths
+        # Count port scans
         port_scans = 0
+        
+        # Check for firewall-based port scans (multiple ports from same IP)
+        for ip, ports in ip_ports.items():
+            if len(ports) > 5:  # Threshold for port scan detection
+                port_scans += 1
+        
+        # Check for web-based scans (many different paths)
         for ip, paths in ip_requests.items():
-            if len(paths) > 10:  # Threshold for port scan detection
+            if len(paths) > 10:  # Threshold for path scan detection
                 port_scans += 1
         
         return port_scans
@@ -239,6 +333,10 @@ class LogAnalyzer:
                     entry = self.parse_nginx_log(line)
                 elif self.log_type == 'json':
                     entry = self.parse_json_log(line)
+                elif self.log_type == 'firewall':
+                    entry = self.parse_firewall_log(line)
+                elif self.log_type == 'security':
+                    entry = self.parse_security_log(line)
                 else:
                     entry = self.parse_generic_log(line)
                 
