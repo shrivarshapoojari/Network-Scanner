@@ -1,0 +1,113 @@
+Build a full-stack Flask-based web application that combines:
+
+A Network Log Analyzer
+
+A Web Vulnerability Scanner
+
+The tool should provide a centralized dashboard where security analysts can upload logs, initiate scans on websites or IPs, and view actionable vulnerability insights.
+
+✅ Functional Requirements:
+🔎 1. Web Vulnerability Scanner
+Accept user input for a target domain or IP.
+
+Perform scans for OWASP Top 10 vulnerabilities:
+
+SQL Injection
+
+XSS (Reflected & Stored)
+
+CSRF
+
+Command Injection
+
+Insecure Headers
+
+Directory Listing / Traversal
+
+Use tools/libraries like:
+
+requests, beautifulsoup, urllib, wappalyzer
+
+Optional: integrate open-source scanners like w3af, Nikto, ZAP, or Nuclei
+
+Show detailed scan results, including:
+
+Affected URL
+
+Exploited parameter
+
+Severity (Low/Medium/High)
+
+Recommended fix
+
+📊 2. Network Log Analyzer
+Accept logs in various formats (Apache/Nginx access logs, UFW logs, custom JSON logs).
+
+Detect patterns such as:
+
+Failed logins/brute force attempts
+
+Port scans
+
+DoS attack patterns
+
+Suspicious IPs (use GeoIP lookup and IP reputation APIs)
+
+Display analytics:
+
+Top source IPs
+
+Most targeted ports
+
+Requests per second/minute
+
+Log timeline graphs
+
+Visualizations with Chart.js or Plotly
+
+🔐 3. Authentication (Optional)
+Basic login/signup system using Flask-Login or OAuth2.
+
+Role-based access (Admin vs Viewer).
+
+📁 4. Project Structure
+scanner/ - Web vulnerability scanner logic
+
+analyzer/ - Log parsing and analysis engine
+
+app.py or run.py - Flask entry point
+
+templates/, static/, uploads/ folders
+
+Use Blueprints for modular Flask design
+
+🧠 5. Bonus Features (Optional)
+Export reports as PDF/CSV
+
+Schedule scans or log imports with APScheduler or Celery
+
+Use SQLite or PostgreSQL to save scan results and logs
+
+REST API support for external integrations
+
+🧪 Technical Stack
+Backend: Flask, SQLAlchemy, Jinja2
+
+Frontend: HTML, Bootstrap/Tailwind, JS, Chart.js
+
+Vulnerability Scanning: requests, urllib, bs4, wappalyzer, or shell out to tools like nikto, nuclei, ZAP
+
+Log Analysis: pandas, re, matplotlib/plotly, geoip2, ipwhois
+
+Security: Flask-CORS, Flask-Limiter
+
+Task Queue (optional): Celery + Redis
+
+🛠 Developer Goals
+The tool should be modular and production-ready.
+
+Follow Python best practices with virtualenv, .env, and structured configs.
+
+Add README with usage, setup, and sample logs/scan outputs.
+
+⚙️ Deliver the full codebase with sample test logs, instructions to run locally, and extensibility for Docker deployment.
