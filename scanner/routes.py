@@ -42,6 +42,14 @@ def scan():
                 result = scanner.test_insecure_headers()
             elif scan_type == 'directory_traversal':
                 result = scanner.test_directory_traversal()
+            elif scan_type == 'file_upload':
+                result = scanner.test_file_upload()
+            elif scan_type == 'information_disclosure':
+                result = scanner.test_information_disclosure()
+            elif scan_type == 'ssl_tls_security':
+                result = scanner.test_ssl_tls_security()
+            elif scan_type == 'session_management':
+                result = scanner.test_session_management()
             else:
                 continue
             

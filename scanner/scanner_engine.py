@@ -21,12 +21,21 @@ class VulnerabilityScanner:
         """Make HTTP request with error handling"""
         try:
             if method.upper() == 'POST':
-                response = self.session.post(url, data=data, params=params, timeout=self.timeout)
+                response = self.session.post(url, data=data, params=params, timeout=self.timeout, verify=False)
             else:
-                response = self.session.get(url, params=params, timeout=self.timeout)
+                response = self.session.get(url, params=params, timeout=self.timeout, verify=False)
             return response
+        except requests.exceptions.Timeout:
+            logging.warning(f"Request timeout for {url}")
+            return None
+        except requests.exceptions.ConnectionError:
+            logging.warning(f"Connection error for {url}")
+            return None
         except requests.exceptions.RequestException as e:
-            logging.error(f"Request failed for {url}: {str(e)}")
+            logging.warning(f"Request failed for {url}: {str(e)}")
+            return None
+        except Exception as e:
+            logging.error(f"Unexpected error for {url}: {str(e)}")
             return None
     
     def test_sql_injection(self):
@@ -318,4 +327,120 @@ class VulnerabilityScanner:
             
         except Exception as e:
             logging.error(f"Directory traversal test failed: {str(e)}")
+            return None
+    
+    def test_file_upload(self):
+        """Test for insecure file upload vulnerabilities"""
+        try:
+            response = self._make_request(self.target_url)
+            if not response:
+                return None
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            file_inputs = soup.find_all('input', {'type': 'file'})
+            
+            if file_inputs:
+                return {
+                    'vulnerability': 'File Upload Found',
+                    'severity': 'Medium',
+                    'description': 'File upload functionality detected - requires manual testing',
+                    'affected_parameter': 'File upload form',
+                    'recommendation': 'Implement file type validation, size limits, and scan uploaded files'
+                }
+            
+            return None
+            
+        except Exception as e:
+            logging.error(f"File upload test failed: {str(e)}")
+            return None
+    
+    def test_information_disclosure(self):
+        """Test for information disclosure vulnerabilities"""
+        try:
+            disclosure_paths = [
+                '/.env',
+                '/config.php',
+                '/phpinfo.php',
+                '/.git/config',
+                '/robots.txt',
+                '/admin/config.php',
+                '/wp-config.php',
+                '/.htaccess'
+            ]
+            
+            for path in disclosure_paths:
+                test_url = urljoin(self.target_url, path)
+                response = self._make_request(test_url)
+                
+                if response and response.status_code == 200:
+                    content = response.text.lower()
+                    if any(keyword in content for keyword in ['password', 'secret', 'key', 'token', 'database']):
+                        return {
+                            'vulnerability': 'Information Disclosure',
+                            'severity': 'Medium',
+                            'description': f'Sensitive information exposed at {path}',
+                            'affected_parameter': path,
+                            'recommendation': 'Restrict access to sensitive files and implement proper access controls'
+                        }
+            
+            return None
+            
+        except Exception as e:
+            logging.error(f"Information disclosure test failed: {str(e)}")
+            return None
+    
+    def test_ssl_tls_security(self):
+        """Test for SSL/TLS security issues"""
+        try:
+            from urllib.parse import urlparse
+            
+            parsed_url = urlparse(self.target_url)
+            
+            if parsed_url.scheme != 'https':
+                return {
+                    'vulnerability': 'Insecure Protocol',
+                    'severity': 'Medium',
+                    'description': 'Website does not use HTTPS encryption',
+                    'affected_parameter': 'Protocol',
+                    'recommendation': 'Implement SSL/TLS encryption for all communications'
+                }
+            
+            return None
+            
+        except Exception as e:
+            logging.error(f"SSL/TLS test failed: {str(e)}")
+            return None
+    
+    def test_session_management(self):
+        """Test for session management vulnerabilities"""
+        try:
+            response = self._make_request(self.target_url)
+            if not response:
+                return None
+            
+            issues = []
+            
+            # Check Set-Cookie headers
+            set_cookie_headers = response.headers.get('Set-Cookie', '')
+            if set_cookie_headers:
+                if 'Secure' not in set_cookie_headers:
+                    issues.append('Cookies not marked as Secure')
+                if 'HttpOnly' not in set_cookie_headers:
+                    issues.append('Cookies not marked as HttpOnly')
+                if 'SameSite' not in set_cookie_headers:
+                    issues.append('Cookies missing SameSite attribute')
+            
+            if issues:
+                return {
+                    'vulnerability': 'Insecure Session Management',
+                    'severity': 'Medium',
+                    'description': '; '.join(issues),
+                    'affected_parameter': 'Session Cookies',
+                    'recommendation': 'Configure secure session cookie attributes (Secure, HttpOnly, SameSite)'
+                }
+            
+            return None
+            
+        except Exception as e:
+            logging.error(f"Session management test failed: {str(e)}")
             return None
