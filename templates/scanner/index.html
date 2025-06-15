@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Vulnerability Scanner - CyberSec Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i data-feather="search" class="me-2"></i>
+            Web Vulnerability Scanner
+        </h2>
+        <p class="text-muted mb-4">
+            Scan web applications for common security vulnerabilities and misconfigurations.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Scan Configuration -->
+    <div class="col-lg-8">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="settings" class="me-2"></i>
+                    Scan Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('scanner.scan') }}">
+                    <div class="mb-4">
+                        <label for="target_url" class="form-label">Target URL</label>
+                        <input type="url" class="form-control" id="target_url" name="target_url" 
+                               placeholder="https://example.com" required>
+                        <div class="form-text">Enter the complete URL including http:// or https://</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Vulnerability Tests</label>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="scan_types" 
+                                           value="sql_injection" id="sql_injection" checked>
+                                    <label class="form-check-label" for="sql_injection">
+                                        <span class="badge bg-danger me-2">High</span>
+                                        SQL Injection
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="scan_types" 
+                                           value="xss" id="xss" checked>
+                                    <label class="form-check-label" for="xss">
+                                        <span class="badge bg-danger me-2">High</span>
+                                        Cross-Site Scripting (XSS)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="scan_types" 
+                                           value="csrf" id="csrf" checked>
+                                    <label class="form-check-label" for="csrf">
+                                        <span class="badge bg-warning me-2">Med</span>
+                                        CSRF Protection
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="scan_types" 
+                                           value="command_injection" id="command_injection" checked>
+                                    <label class="form-check-label" for="command_injection">
+                                        <span class="badge bg-danger me-2">Critical</span>
+                                        Command Injection
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="scan_types" 
+                                           value="insecure_headers" id="insecure_headers" checked>
+                                    <label class="form-check-label" for="insecure_headers">
+                                        <span class="badge bg-info me-2">Low</span>
+                                        Insecure Headers
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="scan_types" 
+                                           value="directory_traversal" id="directory_traversal" checked>
+                                    <label class="form-check-label" for="directory_traversal">
+                                        <span class="badge bg-danger me-2">High</span>
+                                        Directory Traversal
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i data-feather="play" class="me-2"></i>
+                        Start Vulnerability Scan
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan Information -->
+    <div class="col-lg-4">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="info" class="me-2"></i>
+                    Scan Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="text-primary">What we test:</h6>
+                <ul class="text-muted mb-3">
+                    <li>OWASP Top 10 vulnerabilities</li>
+                    <li>Input validation flaws</li>
+                    <li>Authentication bypasses</li>
+                    <li>Security misconfigurations</li>
+                    <li>Information disclosure</li>
+                </ul>
+
+                <h6 class="text-warning">Scan Duration:</h6>
+                <p class="text-muted mb-3">
+                    Typical scans take 30 seconds to 2 minutes depending on the target complexity.
+                </p>
+
+                <h6 class="text-success">Legal Notice:</h6>
+                <p class="text-muted small">
+                    Only scan websites you own or have explicit permission to test. 
+                    Unauthorized scanning may violate terms of service and local laws.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Scans -->
+{% if recent_scans %}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="clock" class="me-2"></i>
+                    Recent Scans
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>Target URL</th>
+                                <th>Vulnerability</th>
+                                <th>Severity</th>
+                                <th>Timestamp</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in recent_scans %}
+                            <tr>
+                                <td>{{ scan.target_url[:50] }}{% if scan.target_url|length > 50 %}...{% endif %}</td>
+                                <td>{{ scan.vulnerability or 'No issues found' }}</td>
+                                <td>
+                                    {% if scan.severity %}
+                                        <span class="badge bg-{{ 'danger' if scan.severity == 'Critical' or scan.severity == 'High' else 'warning' if scan.severity == 'Medium' else 'info' }}">
+                                            {{ scan.severity }}
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-success">Clean</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ scan.timestamp.strftime('%Y-%m-%d %H:%M') if scan.timestamp else 'N/A' }}</td>
+                                <td>
+                                    <a href="{{ url_for('scanner.view_result', scan_id=scan.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i data-feather="eye" class="me-1"></i>View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

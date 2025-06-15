@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Scan Results - CyberSec Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i data-feather="search" class="me-2"></i>
+            Vulnerability Scan Results
+        </h2>
+        <div class="mb-4">
+            <span class="text-muted">Target:</span>
+            <code class="text-info">{{ target_url }}</code>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Summary -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="bar-chart" class="me-2"></i>
+                    Scan Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h3 class="text-danger">{{ results|selectattr('severity', 'equalto', 'Critical')|list|length + results|selectattr('severity', 'equalto', 'High')|list|length }}</h3>
+                            <p class="text-muted mb-0">High/Critical</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h3 class="text-warning">{{ results|selectattr('severity', 'equalto', 'Medium')|list|length }}</h3>
+                            <p class="text-muted mb-0">Medium</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h3 class="text-info">{{ results|selectattr('severity', 'equalto', 'Low')|list|length }}</h3>
+                            <p class="text-muted mb-0">Low</p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3">
+                            <h3 class="text-primary">{{ results|length }}</h3>
+                            <p class="text-muted mb-0">Total Issues</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Vulnerability Details -->
+{% if results %}
+    {% for result in results %}
+    <div class="card bg-secondary mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i data-feather="alert-triangle" class="me-2"></i>
+                {{ result.vulnerability }}
+            </h5>
+            <span class="badge bg-{{ 'danger' if result.severity == 'Critical' or result.severity == 'High' else 'warning' if result.severity == 'Medium' else 'info' }} fs-6">
+                {{ result.severity }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-8">
+                    <h6 class="text-primary">Description:</h6>
+                    <p class="text-muted">{{ result.description }}</p>
+                    
+                    {% if result.affected_parameter %}
+                    <h6 class="text-warning">Affected Parameter:</h6>
+                    <code class="text-info">{{ result.affected_parameter }}</code>
+                    {% endif %}
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-success">Recommendation:</h6>
+                    <p class="text-muted">{{ result.recommendation }}</p>
+                    
+                    <small class="text-muted">
+                        <i data-feather="clock" class="me-1"></i>
+                        Detected: {{ result.timestamp.strftime('%Y-%m-%d %H:%M:%S') if result.timestamp else 'N/A' }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% else %}
+    <div class="card bg-secondary">
+        <div class="card-body text-center py-5">
+            <i data-feather="check-circle" class="text-success mb-3" style="width: 64px; height: 64px;"></i>
+            <h4 class="text-success">No Vulnerabilities Detected</h4>
+            <p class="text-muted">
+                The scan completed successfully and no security issues were found in the tested categories.
+            </p>
+            <p class="text-muted small">
+                <strong>Note:</strong> This does not guarantee the target is completely secure. 
+                Consider running additional tests and following security best practices.
+            </p>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="d-flex gap-3">
+            <a href="{{ url_for('scanner.index') }}" class="btn btn-primary">
+                <i data-feather="search" class="me-2"></i>
+                New Scan
+            </a>
+            <button class="btn btn-outline-secondary" onclick="window.print()">
+                <i data-feather="printer" class="me-2"></i>
+                Print Report
+            </button>
+            <button class="btn btn-outline-info" onclick="exportResults()">
+                <i data-feather="download" class="me-2"></i>
+                Export Results
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function exportResults() {
+    const results = {{ results|tojson }};
+    const csvContent = "data:text/csv;charset=utf-8," 
+        + "Vulnerability,Severity,Description,Affected Parameter,Recommendation,Timestamp\n"
+        + results.map(r => [
+            r.vulnerability || '',
+            r.severity || '',
+            (r.description || '').replace(/,/g, ';'),
+            r.affected_parameter || '',
+            (r.recommendation || '').replace(/,/g, ';'),
+            r.timestamp || ''
+        ].join(',')).join('\n');
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "vulnerability_scan_results.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}

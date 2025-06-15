@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Log Analyzer - CyberSec Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i data-feather="file-text" class="me-2"></i>
+            Network Log Analyzer
+        </h2>
+        <p class="text-muted mb-4">
+            Upload and analyze network logs to detect security threats and suspicious activities.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Upload Form -->
+    <div class="col-lg-8">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="upload" class="me-2"></i>
+                    Upload Log File
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('analyzer.upload_log') }}" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="log_file" class="form-label">Select Log File</label>
+                        <input type="file" class="form-control" id="log_file" name="log_file" 
+                               accept=".log,.txt,.json" required>
+                        <div class="form-text">
+                            Supported formats: .log, .txt, .json (Max size: 16MB)
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="log_type" class="form-label">Log Type</label>
+                        <select class="form-select" id="log_type" name="log_type">
+                            <option value="auto">Auto-detect</option>
+                            <option value="apache">Apache Access Log</option>
+                            <option value="nginx">Nginx Access Log</option>
+                            <option value="json">JSON Log</option>
+                            <option value="generic">Generic/Custom Log</option>
+                        </select>
+                        <div class="form-text">
+                            Select the log format or use auto-detection
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning btn-lg text-dark">
+                        <i data-feather="upload" class="me-2"></i>
+                        Upload & Analyze
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analysis Information -->
+    <div class="col-lg-4">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="info" class="me-2"></i>
+                    Analysis Features
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="text-primary">Threat Detection:</h6>
+                <ul class="text-muted mb-3">
+                    <li>Brute force attacks</li>
+                    <li>Port scanning attempts</li>
+                    <li>DDoS attack patterns</li>
+                    <li>Suspicious IP addresses</li>
+                    <li>Attack pattern recognition</li>
+                </ul>
+
+                <h6 class="text-warning">Log Formats:</h6>
+                <ul class="text-muted mb-3">
+                    <li>Apache & Nginx access logs</li>
+                    <li>JSON structured logs</li>
+                    <li>Custom log formats</li>
+                    <li>Firewall logs</li>
+                </ul>
+
+                <h6 class="text-success">Analytics:</h6>
+                <ul class="text-muted">
+                    <li>Traffic statistics</li>
+                    <li>Geographic IP analysis</li>
+                    <li>Timeline visualization</li>
+                    <li>Top attackers/targets</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Sample Log Format -->
+        <div class="card bg-secondary mt-4">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i data-feather="code" class="me-2"></i>
+                    Sample Log Format
+                </h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">Apache Access Log:</small>
+                <pre class="text-info small mt-2"><code>192.168.1.100 - - [01/Jan/2025:12:00:00 +0000] "GET /admin HTTP/1.1" 401 1234 "-" "Mozilla/5.0..."</code></pre>
+                
+                <small class="text-muted">JSON Log:</small>
+                <pre class="text-info small mt-2"><code>{"ip": "192.168.1.100", "timestamp": "2025-01-01T12:00:00Z", "request": "GET /admin", "status": 401}</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Analyses -->
+{% if recent_analyses %}
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="clock" class="me-2"></i>
+                    Recent Analyses
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>Filename</th>
+                                <th>Log Type</th>
+                                <th>Total Entries</th>
+                                <th>Threats Found</th>
+                                <th>Timestamp</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for analysis in recent_analyses %}
+                            <tr>
+                                <td>{{ analysis.filename }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ analysis.log_type }}</span>
+                                </td>
+                                <td>{{ "{:,}".format(analysis.total_entries) }}</td>
+                                <td>
+                                    {% set threat_count = analysis.failed_logins + analysis.port_scans + analysis.dos_attempts %}
+                                    {% if threat_count > 0 %}
+                                        <span class="badge bg-danger">{{ threat_count }}</span>
+                                    {% else %}
+                                        <span class="badge bg-success">0</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ analysis.timestamp.strftime('%Y-%m-%d %H:%M') if analysis.timestamp else 'N/A' }}</td>
+                                <td>
+                                    <a href="{{ url_for('analyzer.view_result', analysis_id=analysis.id) }}" 
+                                       class="btn btn-sm btn-outline-warning">
+                                        <i data-feather="eye" class="me-1"></i>View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

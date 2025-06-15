@@ -1,0 +1,354 @@
+{% extends "base.html" %}
+
+{% block title %}Analysis Results - CyberSec Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2 class="mb-4">
+            <i data-feather="file-text" class="me-2"></i>
+            Log Analysis Results
+        </h2>
+        <div class="mb-4">
+            <span class="text-muted">File:</span>
+            <code class="text-info">{{ analysis.filename }}</code>
+            <span class="text-muted ms-3">Type:</span>
+            <span class="badge bg-info">{{ analysis.log_type }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Analysis Summary -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="bar-chart" class="me-2"></i>
+                    Analysis Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2">
+                        <div class="p-3">
+                            <h3 class="text-primary">{{ "{:,}".format(analysis.total_entries) }}</h3>
+                            <p class="text-muted mb-0">Total Entries</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="p-3">
+                            <h3 class="text-danger">{{ analysis.failed_logins }}</h3>
+                            <p class="text-muted mb-0">Failed Logins</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="p-3">
+                            <h3 class="text-warning">{{ analysis.port_scans }}</h3>
+                            <p class="text-muted mb-0">Port Scans</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="p-3">
+                            <h3 class="text-danger">{{ analysis.dos_attempts }}</h3>
+                            <p class="text-muted mb-0">DoS Attempts</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="p-3">
+                            <h3 class="text-warning">{{ analysis.suspicious_ips|length }}</h3>
+                            <p class="text-muted mb-0">Suspicious IPs</p>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="p-3">
+                            <h3 class="text-info">{{ analysis.top_ips|length }}</h3>
+                            <p class="text-muted mb-0">Unique IPs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <!-- Top IPs Chart -->
+    <div class="col-lg-6">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="users" class="me-2"></i>
+                    Top Source IPs
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="topIpsChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Threat Distribution Chart -->
+    <div class="col-lg-6">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="alert-triangle" class="me-2"></i>
+                    Threat Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="threatChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Suspicious IPs -->
+{% if analysis.suspicious_ips %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="alert-circle" class="me-2"></i>
+                    Suspicious IP Addresses
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Request Count</th>
+                                <th>Attack Types</th>
+                                <th>Risk Level</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ip_info in analysis.suspicious_ips %}
+                            <tr>
+                                <td>
+                                    <code class="text-danger">{{ ip_info.ip }}</code>
+                                </td>
+                                <td>{{ ip_info.count }}</td>
+                                <td>
+                                    {% for attack in ip_info.attacks %}
+                                        <span class="badge bg-warning me-1">{{ attack }}</span>
+                                    {% endfor %}
+                                    {% if not ip_info.attacks %}
+                                        <span class="text-muted">High traffic volume</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ip_info.attacks|length > 2 %}
+                                        <span class="badge bg-danger">High</span>
+                                    {% elif ip_info.attacks|length > 0 %}
+                                        <span class="badge bg-warning">Medium</span>
+                                    {% else %}
+                                        <span class="badge bg-info">Low</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Top IP Sources -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-secondary">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i data-feather="globe" class="me-2"></i>
+                    Top Traffic Sources
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped">
+                        <thead>
+                            <tr>
+                                <th>IP Address</th>
+                                <th>Request Count</th>
+                                <th>Percentage</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ip_info in analysis.top_ips[:10] %}
+                            <tr>
+                                <td>
+                                    <code class="text-info">{{ ip_info.ip }}</code>
+                                </td>
+                                <td>{{ "{:,}".format(ip_info.count) }}</td>
+                                <td>
+                                    {% set percentage = (ip_info.count / analysis.total_entries * 100)|round(2) %}
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-info" role="progressbar" 
+                                             style="width: {{ percentage }}%" 
+                                             aria-valuenow="{{ percentage }}" 
+                                             aria-valuemin="0" aria-valuemax="100">
+                                            {{ percentage }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if ip_info.ip in analysis.suspicious_ips|map(attribute='ip')|list %}
+                                        <span class="badge bg-danger">Suspicious</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Normal</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="d-flex gap-3">
+            <a href="{{ url_for('analyzer.index') }}" class="btn btn-warning text-dark">
+                <i data-feather="upload" class="me-2"></i>
+                Analyze New Log
+            </a>
+            <button class="btn btn-outline-secondary" onclick="window.print()">
+                <i data-feather="printer" class="me-2"></i>
+                Print Report
+            </button>
+            <button class="btn btn-outline-info" onclick="exportAnalysis()">
+                <i data-feather="download" class="me-2"></i>
+                Export Analysis
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Top IPs Chart
+const topIpsCtx = document.getElementById('topIpsChart').getContext('2d');
+const topIpsData = {{ analysis.top_ips[:10]|tojson }};
+
+new Chart(topIpsCtx, {
+    type: 'bar',
+    data: {
+        labels: topIpsData.map(ip => ip.ip),
+        datasets: [{
+            label: 'Request Count',
+            data: topIpsData.map(ip => ip.count),
+            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#ffffff'
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    color: '#ffffff'
+                },
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                }
+            },
+            x: {
+                ticks: {
+                    color: '#ffffff'
+                },
+                grid: {
+                    color: 'rgba(255, 255, 255, 0.1)'
+                }
+            }
+        }
+    }
+});
+
+// Threat Distribution Chart
+const threatCtx = document.getElementById('threatChart').getContext('2d');
+
+new Chart(threatCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Failed Logins', 'Port Scans', 'DoS Attempts', 'Normal Traffic'],
+        datasets: [{
+            data: [
+                {{ analysis.failed_logins }},
+                {{ analysis.port_scans }},
+                {{ analysis.dos_attempts }},
+                {{ analysis.total_entries - analysis.failed_logins - analysis.port_scans - analysis.dos_attempts }}
+            ],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(255, 205, 86, 0.8)',
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(75, 192, 192, 0.8)'
+            ],
+            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(255, 205, 86, 1)',
+                'rgba(255, 99, 132, 1)',
+                'rgba(75, 192, 192, 1)'
+            ],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#ffffff'
+                }
+            }
+        }
+    }
+});
+
+function exportAnalysis() {
+    const analysis = {{ analysis|tojson }};
+    const csvContent = "data:text/csv;charset=utf-8," 
+        + "Metric,Value\n"
+        + `Total Entries,${analysis.total_entries}\n`
+        + `Failed Logins,${analysis.failed_logins}\n`
+        + `Port Scans,${analysis.port_scans}\n`
+        + `DoS Attempts,${analysis.dos_attempts}\n`
+        + `Suspicious IPs,${analysis.suspicious_ips.length}\n`
+        + `Log Type,${analysis.log_type}\n`;
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "log_analysis_results.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+{% endblock %}
