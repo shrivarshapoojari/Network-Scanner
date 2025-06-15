@@ -1,0 +1,15 @@
+2025-06-15T08:00:01.000Z IDS_ALERT: Possible SQL injection attempt from 203.0.113.45 targeting 10.0.0.100:80
+2025-06-15T08:00:02.000Z IDS_ALERT: XSS attack detected from 203.0.113.45 targeting 10.0.0.100:443
+2025-06-15T08:00:03.000Z FIREWALL_BLOCK: Port scan detected from 198.51.100.25 scanning ports 22,23,80,443,3389 on 10.0.0.100
+2025-06-15T08:00:04.000Z AUTH_FAIL: Failed SSH login attempt from 192.168.1.100 to 10.0.0.100 (user: admin)
+2025-06-15T08:00:05.000Z AUTH_FAIL: Failed SSH login attempt from 192.168.1.100 to 10.0.0.100 (user: root)
+2025-06-15T08:00:06.000Z AUTH_FAIL: Failed SSH login attempt from 192.168.1.100 to 10.0.0.100 (user: administrator)
+2025-06-15T08:00:07.000Z DDoS_ALERT: High volume traffic detected from 203.0.113.45 (1000+ requests/minute)
+2025-06-15T08:00:08.000Z MALWARE_DETECTED: Suspicious file upload from 198.51.100.25 to 10.0.0.100:80
+2025-06-15T08:00:09.000Z IDS_ALERT: Command injection attempt from 203.0.113.45 targeting /cgi-bin/
+2025-06-15T08:00:10.000Z FIREWALL_ALLOW: Normal traffic from 10.0.0.50 to 10.0.0.100:443
+2025-06-15T08:00:11.000Z AUTH_FAIL: Failed FTP login attempt from 198.51.100.25 to 10.0.0.100 (user: anonymous)
+2025-06-15T08:00:12.000Z IDS_ALERT: Directory traversal attempt from 203.0.113.45 trying to access /etc/passwd
+2025-06-15T08:00:13.000Z SUSPICIOUS_ACTIVITY: Multiple failed login attempts from 192.168.1.100 (threshold exceeded)
+2025-06-15T08:00:14.000Z FIREWALL_BLOCK: Blocked connection from known malicious IP 203.0.113.45
+2025-06-15T08:00:15.000Z INTRUSION_DETECTED: Unauthorized access attempt to admin panel from 198.51.100.25

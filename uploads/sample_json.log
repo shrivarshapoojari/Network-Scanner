@@ -1,0 +1,8 @@
+{"ip": "192.168.1.100", "timestamp": "2025-06-15T08:00:01Z", "request": "GET /admin", "status": 401, "size": 1234, "user_agent": "Mozilla/5.0"}
+{"ip": "203.0.113.45", "timestamp": "2025-06-15T08:00:02Z", "request": "GET /search?q=<script>alert('XSS')</script>", "status": 200, "size": 2345, "user_agent": "Mozilla/5.0"}
+{"ip": "198.51.100.25", "timestamp": "2025-06-15T08:00:03Z", "request": "GET /wp-login.php", "status": 404, "size": 567, "user_agent": "WPScan"}
+{"ip": "203.0.113.45", "timestamp": "2025-06-15T08:00:04Z", "request": "POST /upload.php", "status": 200, "size": 3456, "user_agent": "curl/7.68.0"}
+{"ip": "192.168.1.100", "timestamp": "2025-06-15T08:00:05Z", "request": "GET /admin", "status": 401, "size": 1234, "user_agent": "Mozilla/5.0"}
+{"ip": "203.0.113.45", "timestamp": "2025-06-15T08:00:06Z", "request": "GET /files/../../../etc/passwd", "status": 200, "size": 2345, "user_agent": "Python-urllib/3.8"}
+{"ip": "10.0.0.50", "timestamp": "2025-06-15T08:00:07Z", "request": "GET /dashboard", "status": 200, "size": 5678, "user_agent": "Mozilla/5.0"}
+{"ip": "203.0.113.45", "timestamp": "2025-06-15T08:00:08Z", "request": "GET /cgi-bin/test?cmd=whoami", "status": 200, "size": 1234, "user_agent": "curl/7.68.0"}
