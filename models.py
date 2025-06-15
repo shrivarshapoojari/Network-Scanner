@@ -12,6 +12,16 @@ class ScanResult(db.Model):
     recommendation = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     
+    def __init__(self, target_url, scan_type, vulnerability=None, severity=None, 
+                 description=None, affected_parameter=None, recommendation=None):
+        self.target_url = target_url
+        self.scan_type = scan_type
+        self.vulnerability = vulnerability
+        self.severity = severity
+        self.description = description
+        self.affected_parameter = affected_parameter
+        self.recommendation = recommendation
+    
     def to_dict(self):
         return {
             'id': self.id,
@@ -36,6 +46,17 @@ class LogAnalysis(db.Model):
     dos_attempts = db.Column(db.Integer, default=0)
     top_ips = db.Column(db.Text)  # JSON string
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __init__(self, filename, log_type, total_entries=0, suspicious_ips=None,
+                 failed_logins=0, port_scans=0, dos_attempts=0, top_ips=None):
+        self.filename = filename
+        self.log_type = log_type
+        self.total_entries = total_entries
+        self.suspicious_ips = suspicious_ips
+        self.failed_logins = failed_logins
+        self.port_scans = port_scans
+        self.dos_attempts = dos_attempts
+        self.top_ips = top_ips
     
     def to_dict(self):
         return {

@@ -66,7 +66,9 @@ def scan():
         else:
             flash('Scan completed. No vulnerabilities detected.', 'info')
             
-        return render_template('scanner/results.html', results=results, target_url=target_url)
+        # Convert results to dictionaries for JSON serialization
+        results_dict = [result.to_dict() for result in results]
+        return render_template('scanner/results.html', results=results_dict, target_url=target_url)
         
     except Exception as e:
         logging.error(f"Scan error: {str(e)}")
@@ -77,7 +79,7 @@ def scan():
 def view_result(scan_id):
     """View specific scan result"""
     result = ScanResult.query.get_or_404(scan_id)
-    return render_template('scanner/results.html', results=[result], target_url=result.target_url)
+    return render_template('scanner/results.html', results=[result.to_dict()], target_url=result.target_url)
 
 @scanner_bp.route('/history')
 def history():

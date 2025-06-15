@@ -88,7 +88,7 @@
                     
                     <small class="text-muted">
                         <i data-feather="clock" class="me-1"></i>
-                        Detected: {{ result.timestamp.strftime('%Y-%m-%d %H:%M:%S') if result.timestamp else 'N/A' }}
+                        Detected: {{ result.timestamp if result.timestamp else 'N/A' }}
                     </small>
                 </div>
             </div>
